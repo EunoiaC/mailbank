@@ -11,14 +11,14 @@ import { geohashQueryBounds, distanceBetween } from 'geofire-common';
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID,
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+    apiKey: "AIzaSyCGZtHGku5uPMGhU8DZ_0r1gLyhOlKiQHU",
+    authDomain: "bartr-c35a7.firebaseapp.com",
+    databaseURL: "https://bartr-c35a7-default-rtdb.firebaseio.com",
+    projectId: "bartr-c35a7",
+    storageBucket: "bartr-c35a7.firebasestorage.app",
+    messagingSenderId: "663587878943",
+    appId: "1:663587878943:web:c7d96a6eb01b0f8a793d2a",
+    measurementId: "G-PRCBM93CR8"
 };
 
 // Initialize Firebase
