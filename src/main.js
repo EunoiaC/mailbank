@@ -1256,7 +1256,9 @@ document.querySelector("#signUpForm").addEventListener("submit", async (event) =
         }
     } else {
         userProfile = {
-            name,
+            first_name: name,
+            last_name: lastName,
+            prefix: prefixInput.value,
             sponsor,
             hoster: null,
         };
