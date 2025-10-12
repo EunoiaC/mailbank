@@ -1345,8 +1345,6 @@ document.getElementById('confirmAccept').addEventListener('click', async functio
     const requestId = document.getElementById('acceptRequestId').value;
 
     try {
-        const requestDoc = doc(firestoreDB, "requests", requestId);
-        await setDoc(requestDoc, { status: "accepted", acceptedAt: new Date() }, { merge: true });
         const token = await getBearerToken();
 
         const response = await fetch('/api/approve_request', {

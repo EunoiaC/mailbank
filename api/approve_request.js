@@ -47,9 +47,9 @@ export default async function approve_request(req, res) {
         }
         const requestData = requestDoc.data();
 
-        if (requestData.status !== "accepted") {
-            console.error("Request not accepted");
-            return res.status(400).json({ error: "Request not accepted" });
+        if (requestData.sponsorId !== uid) {
+            console.error("Unauthorized: User is not the sponsor");
+            return res.status(403).json({ error: "Unauthorized" });
         }
 
         const sponsor = await db.collection('users').doc(requestData.sponsorId).get();
@@ -69,6 +69,8 @@ export default async function approve_request(req, res) {
             dependentName: dependentData.first_name,
             dependentPrefix: dependentData.prefix,
             dependentLastName: dependentData.last_name,
+            status: "accepted",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
         const chatroomId = `${requestData.sponsorId}-${requestData.dependentId}`;
