@@ -566,6 +566,11 @@ onAuthStateChanged(auth, async (user) => {
         // hide the get started button
         getStartedButton.style.display = "none";
 
+
+        document.getElementById("sponsorsHeader").style.display = "block";
+        document.getElementById("dependentsHeader").style.display = "block";
+        document.getElementById("requestsHeader").style.display = "block";
+
         // get the document of the user
         const usersCollection = collection(firestoreDB, "users");
         const userDoc = doc(usersCollection, user.uid);
@@ -621,10 +626,6 @@ onAuthStateChanged(auth, async (user) => {
         });
 
         init();
-
-        document.getElementById("sponsorsHeader").style.display = "block";
-        document.getElementById("dependentsHeader").style.display = "block";
-        document.getElementById("requestsHeader").style.display = "block";
 
         const requestList = document.getElementById("requestsList");
         const dependentsList = document.getElementById("dependentsList");
