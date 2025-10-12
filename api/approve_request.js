@@ -62,12 +62,17 @@ export default async function approve_request(req, res) {
         let sponsorData = sponsor.data();
         let dependentData = dependent.data();
 
+        let prefix = "";
+        if (dependentData.prefix) {
+            prefix = dependentData.prefix;
+        }
+
         // update the request to have the sponsor name and address
         await db.collection('requests').doc(requestId).update({
             sponsorName: sponsorData.first_name,
             sponsorAddress: sponsorData.address,
             dependentName: dependentData.first_name,
-            dependentPrefix: dependentData.prefix,
+            dependentPrefix: prefix,
             dependentLastName: dependentData.last_name,
             status: "accepted",
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
