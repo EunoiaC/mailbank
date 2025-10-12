@@ -622,6 +622,10 @@ onAuthStateChanged(auth, async (user) => {
 
         init();
 
+        document.getElementById("sponsorsHeader").style.display = "block";
+        document.getElementById("dependentsHeader").style.display = "block";
+        document.getElementById("requestsHeader").style.display = "block";
+
         const requestList = document.getElementById("requestsList");
         const dependentsList = document.getElementById("dependentsList");
         const sponsorsList = document.getElementById("sponsorsList");
