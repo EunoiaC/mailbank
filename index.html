@@ -7,6 +7,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet"
           integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
     <link rel="stylesheet" href="/sass/style.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <title>mailbank</title>
 </head>
 <body class="bg-light">
@@ -28,40 +33,16 @@
                 them vote, access services, and take control of their future.</p>
             <button class="btn btn-primary btn-lg text-white" id="get-started-button">Get Started</button>
         </div>
-        <div class="container-fluid px-3">
-            <div class="row align-items-center my-4 bg-secondary p-3 rounded border border-light">
-                <div class="col-auto mb-2 mb-md-0">
-                    <div class="btn-group" role="group" aria-label="View toggle">
-                        <button class="btn btn-lg btn-outline-primary active" id="globe-view-button">
-                            <i class="bi bi-globe"></i>
-                        </button>
-                        <button class="btn btn-lg btn-outline-primary" id="grid-view-button">
-                            <i class="bi bi-grid"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="col-12 col-md flex-grow-1 mb-2 mb-md-0">
-                    <input type="text" class="form-control form-control-lg" id="search-field"
-                           placeholder="Search listings...">
-                </div>
-                <div class="col-12 col-md-auto mb-2 mb-md-0">
-                    <select class="form-select form-select-lg" id="filter-dropdown">
-                        <option value="all">All</option>
-                        <option value="offering">Offering</option>
-                        <option value="looking-for">Looking For</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-auto">
-                    <button class="btn btn-primary btn-lg w-100 text-white" id="search-button">Search</button>
-                </div>
-            </div>
+        <hr>
+        <h4 class="mb-0">Listings Near You</h4>
+        <p>Distances and Locations are not exact for protection.</p>
+        <div class="mt-3">
+            <div id="listings-map" class="d-block" style="height: 400px;"></div>
         </div>
-        <h4>Listings Near You</h4>
-
-        <div id="listings-map" class="d-block">
-
-        </div>
-        <div id="listings-grid" class="d-none row row-cols-1 row-cols-md-3 g-4 my-3">
+        <br>
+        <h4>Dependants</h4>
+        <div id="requestsList" class="list-group w-100 mb-5">
+            <!-- Requests will be dynamically added here -->
         </div>
     </div>
     <!-- Sign Up Modal -->
@@ -75,9 +56,26 @@
                 <div class="modal-body">
                     <form id="signUpForm">
                         <div class="mb-3">
-                            <label for="signUpName" class="form-label">Name</label>
+                            <label for="namePrefix" class="form-label">Prefix</label>
+                            <select class="form-select" id="namePrefix">
+                                <option value="" selected>Select a prefix (optional)</option>
+                                <option value="Mr.">Mr.</option>
+                                <option value="Mrs.">Mrs.</option>
+                                <option value="Ms.">Ms.</option>
+                                <option value="Dr.">Dr.</option>
+                                <option value="Rev.">Rev.</option>
+                                <option value="Prof.">Prof.</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="signUpName" class="form-label">First Name</label>
                             <input type="text" class="form-control" id="signUpName">
                             <div class="invalid-feedback">Name is required.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="signUpLastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="signUpLastName">
+                            <div class="invalid-feedback">Last name is required.</div>
                         </div>
                         <div class="mb-3">
                             <label for="signUpEmail" class="form-label">Email</label>
@@ -103,6 +101,7 @@
                                 <div class="invalid-feedback">Please select an option.</div>
                             </div>
                         </div>
+
                         <div id="addressFields" class="d-none">
                             <div class="alert alert-info" role="alert">
                                 <strong>Your address stays private.</strong> It will only be shared after you approve a match. Until then, only your general area (not your exact address) will be visible.
@@ -153,18 +152,20 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form>
+                    <form id="signInForm">
                         <div class="mb-3">
                             <label for="signInEmail" class="form-label">Email address</label>
-                            <input type="email" class="form-control" id="signInEmail" placeholder="Enter your email">
+                            <input class="form-control" id="signInEmail" placeholder="Enter your email">
+                            <div class="invalid-feedback">Please enter a valid email address.</div>
                         </div>
                         <div class="mb-3">
                             <label for="signInPassword" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="signInPassword"
-                                   placeholder="Enter your password">
+                            <input type="password" class="form-control" id="signInPassword" placeholder="Enter your password">
+                            <div class="invalid-feedback">Password is required.</div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Sign In</button>
                     </form>
+                    <div id="signInErrorMessage" class="text-danger mt-2 d-none"></div>
                 </div>
                 <div class="modal-footer">
                     <p class="text-center w-100">Don't have an account? <a href="#" data-bs-toggle="modal"
@@ -174,6 +175,82 @@
             </div>
         </div>
     </div>
+
+    <!-- Request Modal -->
+    <div class="modal fade" id="requestModal" tabindex="-1" aria-labelledby="requestModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="requestModalLabel">Request Mailbox Service</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Please provide a pickup location where you can collect your mail:</p>
+                    <form id="requestForm">
+                        <div class="mb-3">
+                            <textarea class="form-control" id="pickupLocation" rows="3"
+                                      placeholder="Example: I can pick up mail at the downtown library on weekdays after 5pm"></textarea>
+                            <div class="invalid-feedback">Please provide a pickup location.</div>
+                        </div>
+                        <input type="hidden" id="requestSponsorId" value="">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmRequest">Send Request</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Decline Confirmation Modal -->
+    <div class="modal fade" id="declineConfirmModal" tabindex="-1" aria-labelledby="declineConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="declineConfirmModalLabel">Confirm Decline</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Warning:</strong> Declines can never be overturned.
+                    </div>
+                    <p>Are you sure you want to decline this request?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDecline">Decline Request</button>
+                </div>
+                <input type="hidden" id="declineRequestId" value="">
+            </div>
+        </div>
+    </div>
+
+    <!-- Accept Confirmation Modal -->
+    <div class="modal fade" id="acceptConfirmModal" tabindex="-1" aria-labelledby="acceptConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="acceptConfirmModalLabel">Confirm Acceptance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Important:</strong> Once accepted, your mailing address and name will be disclosed to the requester.
+                    </div>
+                    <p>Are you sure you want to accept this request?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="confirmAccept">Accept Request</button>
+                </div>
+                <input type="hidden" id="acceptRequestId" value="">
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO"
             crossorigin="anonymous"></script>

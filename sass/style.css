@@ -11859,5 +11859,67 @@ textarea.form-control-lg {
     display: none !important;
   }
 }
+.geohash-popup .leaflet-popup-content-wrapper {
+  background-color: white;
+  border-radius: 5px;
+}
+
+.geohash-popup-header {
+  border-bottom: 1px solid #eee;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+}
+
+.geohash-listings {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.listing-item {
+  padding: 5px 0;
+}
+
+.listing-item button {
+  margin-top: 5px;
+}
+
+.geohash-pin {
+  background-color: #3388ff;
+  border-radius: 50%;
+  color: white;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  border: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.user-location-marker {
+  position: relative;
+}
+
+.pulse {
+  width: 15px;
+  height: 15px;
+  background-color: rgba(38, 76, 219, 0.6);
+  border-radius: 50%;
+  box-shadow: 0 0 0 rgba(38, 76, 219, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(38, 76, 219, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(38, 76, 219, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(38, 76, 219, 0);
+  }
+}
 
 /*# sourceMappingURL=style.css.map */
