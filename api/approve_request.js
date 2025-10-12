@@ -9,6 +9,8 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+const rtdb = admin.database();
+
 
 export default async function approve_request(req, res) {
     if (req.method !== 'POST') {
@@ -66,6 +68,38 @@ export default async function approve_request(req, res) {
             dependentName: dependentData.first_name,
             dependentPrefix: dependentData.prefix,
             dependentLastName: dependentData.last_name,
+        });
+
+        const chatroomId = `${requestData.sponsorId}-${requestData.dependentId}`;
+        const chatroomRef = rtdb.ref(`chatrooms/${chatroomId}`);
+
+        await chatroomRef.set({
+            participants: {
+                [requestData.sponsorId]: true,
+                [requestData.dependentId]: true
+            },
+            createdAt: admin.database.ServerValue.TIMESTAMP,
+            requestId: requestId,
+            sponsorName: sponsorData.first_name,
+            dependentName: dependentData.first_name,
+            lastMessage: {
+                text: "Chat created. You can now communicate securely.",
+                timestamp: admin.database.ServerValue.TIMESTAMP,
+                sender: "system"
+            }
+        });
+
+        // Add initial welcome message
+        const messagesRef = rtdb.ref(`chatrooms/${chatroomId}/messages`);
+        await messagesRef.push({
+            text: "Welcome! You can now communicate securely about mail pickup and delivery.",
+            timestamp: admin.database.ServerValue.TIMESTAMP,
+            sender: "system"
+        });
+
+        // Update the request with the chatroom ID
+        await db.collection('requests').doc(requestId).update({
+            chatroomId: chatroomId
         });
 
         return res.status(200).json({});

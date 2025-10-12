@@ -2,8 +2,10 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { initializeFirestore, persistentLocalCache, persistentSingleTabManager } from "firebase/firestore";
-import { getFirestore, getDoc, setDoc, doc, query, limit, getDocs, collection, orderBy, startAt, endAt, where, GeoPoint } from "firebase/firestore";
+import { getFirestore, getDoc, setDoc, doc, query as firestoreQuery, limit, getDocs, collection, orderBy, startAt, endAt, where, GeoPoint } from "firebase/firestore";
 import {setPersistence,browserLocalPersistence} from "firebase/auth";
+import { getDatabase, ref, set, push, onValue, off, query, orderByChild, limitToLast } from "firebase/database";
+
 
 // import auth stuff
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
@@ -31,6 +33,167 @@ const analytics = getAnalytics(app);
 const firestoreDB = initializeFirestore(app, {
     localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
 });
+const realtimeDB = getDatabase(app);
+
+function addChatButton(listItem, match) {
+    // Only add chat button if chatroomId exists
+    if (match.chatroomId) {
+        // Create a chat button
+        const chatBtn = document.createElement("button");
+        chatBtn.className = "btn btn-sm btn-primary mt-2";
+        chatBtn.innerHTML = '<i class="bi bi-chat-dots"></i> Chat';
+        chatBtn.addEventListener("click", () => openChatModal(match));
+
+        // Add to the list item
+        const statusBadge = listItem.querySelector(".badge");
+        if (statusBadge) {
+            const buttonContainer = document.createElement("div");
+            buttonContainer.className = "d-flex align-items-center gap-2 mt-2";
+            buttonContainer.appendChild(statusBadge.cloneNode(true));
+            statusBadge.remove();
+            buttonContainer.appendChild(chatBtn);
+
+            const infoSection = listItem.querySelector(".ps-5");
+            infoSection.appendChild(buttonContainer);
+        } else {
+            const infoSection = listItem.querySelector(".ps-5");
+            infoSection.appendChild(chatBtn);
+        }
+    }
+}
+function openChatModal(match) {
+    const chatModal = new bootstrap.Modal(document.getElementById("chatModal"));
+    const chatroomId = match.chatroomId;
+
+    // Set the chat partner name based on whether user is sponsor or dependent
+    const chatPartnerName = document.getElementById("chatPartnerName");
+    if (selfProfile.sponsor) {
+        chatPartnerName.textContent = `${match.dependentPrefix ? match.dependentPrefix + ' ' : ''}${match.dependentName} ${match.dependentLastName}`;
+    } else {
+        chatPartnerName.textContent = match.sponsorName;
+    }
+
+    // Store the current chatroom ID
+    document.getElementById("currentChatroomId").value = chatroomId;
+
+    // Clear existing messages
+    document.getElementById("chatMessages").innerHTML = "";
+
+    // Load chat messages
+    loadChatMessages(chatroomId);
+
+    // Show the modal
+    chatModal.show();
+
+    // Focus on the input field
+    document.getElementById("chatInput").focus();
+}
+
+// Function to load chat messages
+function loadChatMessages(chatroomId) {
+    const messagesRef = ref(realtimeDB, `chatrooms/${chatroomId}/messages`);
+    const messagesQuery = firestoreQuery(messagesRef, orderByChild('timestamp'), limitToLast(50));
+
+    // Remove any existing listeners
+    off(messagesQuery);
+
+    // Listen for messages
+    onValue(messagesQuery, (snapshot) => {
+        const chatMessages = document.getElementById("chatMessages");
+        chatMessages.innerHTML = "";
+
+        if (snapshot.exists()) {
+            const messages = snapshot.val();
+
+            // Convert to array and sort by timestamp
+            const messageArray = Object.entries(messages).map(([id, message]) => ({
+                id,
+                ...message
+            }));
+
+            messageArray.sort((a, b) => a.timestamp - b.timestamp);
+
+            // Render each message
+            messageArray.forEach(message => {
+                const messageElement = document.createElement("div");
+                messageElement.className = "chat-message-container";
+
+                const bubble = document.createElement("div");
+
+                // Determine message type
+                if (message.sender === "system") {
+                    bubble.className = "message message-system";
+                } else if (message.sender === auth.currentUser.uid) {
+                    bubble.className = "message message-sent";
+                } else {
+                    bubble.className = "message message-received";
+                }
+
+                bubble.textContent = message.text;
+
+                const timestamp = document.createElement("div");
+                timestamp.className = "message-time";
+                timestamp.textContent = new Date(message.timestamp).toLocaleString();
+
+                messageElement.appendChild(bubble);
+                messageElement.appendChild(timestamp);
+                chatMessages.appendChild(messageElement);
+            });
+
+            // Scroll to the bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+}
+
+// Function to send a message
+function sendMessage() {
+    const chatroomId = document.getElementById("currentChatroomId").value;
+    const messageText = document.getElementById("chatInput").value.trim();
+
+    if (messageText && chatroomId) {
+        const messagesRef = ref(realtimeDB, `chatrooms/${chatroomId}/messages`);
+        const newMessageRef = push(messagesRef);
+
+        set(newMessageRef, {
+            text: messageText,
+            timestamp: Date.now(),
+            sender: auth.currentUser.uid
+        });
+
+        // Update last message
+        const lastMessageRef = ref(realtimeDB, `chatrooms/${chatroomId}/lastMessage`);
+        set(lastMessageRef, {
+            text: messageText,
+            timestamp: Date.now(),
+            sender: auth.currentUser.uid
+        });
+
+        // Clear the input
+        document.getElementById("chatInput").value = "";
+    }
+}
+
+// Event listener for send button
+document.getElementById("sendMessageBtn").addEventListener("click", sendMessage);
+
+// Event listener for enter key in chat input
+document.getElementById("chatInput").addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+    }
+});
+
+// Close chat listeners when modal is closed
+document.getElementById("chatModal").addEventListener("hidden.bs.modal", () => {
+    const chatroomId = document.getElementById("currentChatroomId").value;
+    if (chatroomId) {
+        const messagesRef = ref(realtimeDB, `chatrooms/${chatroomId}/messages`);
+        off(messagesRef);
+    }
+});
+
 
 // init auth
 const auth = getAuth(app);
@@ -119,10 +282,13 @@ function init() {
                         // check if the sponsor id exists in any of matches or pending
                         const alreadyRequested = pending.some(req => req.sponsorId === user.owner_uid);
                         const alreadyMatched = matches.some(req => req.sponsorId === user.owner_uid);
+                        const alreadyRejected = rejected.some(req => req.sponsorId === user.owner_uid);
                         if (alreadyRequested) {
                             buttonCode = '<span class="badge bg-warning text-dark">Request Pending</span>';
                         } else if (alreadyMatched) {
                             buttonCode = '<span class="badge bg-success">Matched</span>';
+                        } else if (alreadyRejected) {
+                            buttonCode = '<span class="badge bg-danger">Request Declined</span>';
                         } else {
                             buttonCode = user.owner_uid ? `<button class="btn btn-sm btn-primary contact-btn" 
                                 data-user-id="${user.owner_uid}">Request</button>` : '';
@@ -182,6 +348,7 @@ function init() {
 let selfProfile = null;
 let pending = [];
 let matches = [];
+let rejected = [];
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -199,31 +366,29 @@ onAuthStateChanged(auth, async (user) => {
         console.log("User data:", selfProfile);
 
         const requestsCollection = collection(firestoreDB, "requests");
-        if (!selfProfile.sponsor) {
-            // get all requests where the user is the dependent
-            const requestsQuery = query(requestsCollection, where("dependentId", "==", user.uid));
-            const requestsSnapshot = await getDocs(requestsQuery);
-            requestsSnapshot.forEach((doc) => {
-                let requestData = doc.data();
-                requestData.id = doc.id;
-                if (requestData.status === "pending") {
-                    pending.push(requestData);
-                } else if (requestData.status === "accepted") {
-                    matches.push(requestData);
-                }
-            });
-            console.log("Pending requests:", pending);
+        let field = "";
+        if (selfProfile.sponsor) {
+            field = "sponsorId";
         } else {
-            // get all requests where the user is the sponsor
-            const requestsQuery = query(requestsCollection, where("sponsorId", "==", user.uid), where("status", "==", "pending"));
-            const requestsSnapshot = await getDocs(requestsQuery);
-            requestsSnapshot.forEach((doc) => {
-                let requestData = doc.data();
-                requestData.id = doc.id;
-                pending.push(requestData);
-            });
-            console.log("Pending requests:", pending);
+            field = "dependentId";
         }
+        const requestsQuery = query(requestsCollection, where(field, "==", user.uid));
+        const requestsSnapshot = await getDocs(requestsQuery);
+        requestsSnapshot.forEach((doc) => {
+            let requestData = doc.data();
+            requestData.id = doc.id;
+            if (requestData.status === "pending") {
+                pending.push(requestData);
+            } else if (requestData.status === "accepted") {
+                matches.push(requestData);
+            } else {
+                rejected.push(requestData);
+            }
+        });
+
+        console.log("Pending requests:", pending);
+        console.log("Matched requests:", matches);
+        console.log("Rejected requests:", rejected);
 
         // make the button a sign out button
         signInButton.textContent = "Sign Out";
@@ -241,19 +406,35 @@ onAuthStateChanged(auth, async (user) => {
         init();
 
         const requestList = document.getElementById("requestsList");
+        const dependentsList = document.getElementById("dependentsList");
         if (selfProfile.sponsor) {
             // fill with approved requests first
             for (const match of matches) {
                 const listItem = document.createElement("li");
                 listItem.className = "list-group-item d-flex justify-content-between align-items-center";
                 listItem.innerHTML = `
-                <div>
-                    <strong>Request to Sponsor ID:</strong> ${match.sponsorId}<br>
-                    <strong>Pickup Location:</strong> ${match.pickupLocation}<br>
-                    <strong>Status:</strong> <span class="badge bg-success">Matched</span>
+        <div class="matched-dependent">
+            <div class="d-flex align-items-center mb-2">
+                <div class="user-icon bg-primary text-white me-2 rounded-circle d-flex justify-content-center align-items-center" 
+                     style="width: 40px; height: 40px; font-size: 18px;">
+                    ${match.dependentPrefix ? match.dependentPrefix[0] : match.dependentName[0]}
                 </div>
-            `;
-                requestList.appendChild(listItem);
+                <h5 class="mb-0">${match.dependentPrefix ? match.dependentPrefix + ' ' : ''}${match.dependentName} ${match.dependentLastName}</h5>
+            </div>
+            <div class="ps-5">
+                <div class="mb-2">
+                    <i class="bi bi-geo-alt text-primary me-1"></i>
+                    <strong>Pickup Location:</strong>
+                </div>
+                <p class="ms-4 text-muted border-start border-primary ps-2">${match.pickupLocation}</p>
+                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Approved</span>
+            </div>
+        </div>
+    `;
+                dependentsList.appendChild(listItem);
+
+                // Add chat button after the list item is created
+                addChatButton(listItem, match);
             }
             // then fill with pending requests
             for (const request of pending) {
@@ -286,6 +467,8 @@ onAuthStateChanged(auth, async (user) => {
 
                 requestList.appendChild(listItem);
             }
+        } else {
+
         }
     } else {
         // Open Sign In Modal when "Sign In" button is clicked
@@ -870,9 +1053,6 @@ document.getElementById('confirmAccept').addEventListener('click', async functio
 
         // Close the modal
         bootstrap.Modal.getInstance(document.getElementById('acceptConfirmModal')).hide();
-
-        // Show success message
-        alert("Request has been accepted! The dependent will now be able to see your mailing address.");
 
         // Refresh the page to update the UI
         window.location.reload();
