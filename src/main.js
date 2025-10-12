@@ -559,7 +559,7 @@ let pending = [];
 let matches = [];
 let rejected = [];
 
-onAuthStateChanged(auth, async (user) => {
+async function authChange(user)  {
     if (user) {
         const signInButton = document.getElementById("sign-in-button");
         const getStartedButton = document.getElementById("get-started-button");
@@ -576,7 +576,12 @@ onAuthStateChanged(auth, async (user) => {
         const userDoc = doc(usersCollection, user.uid);
         // now get the data
         let userData = await getDoc(userDoc);
-        selfProfile = userData.data();
+        if (!selfProfile) {
+            selfProfile = userData.data();
+        } else {
+            // just update the data
+            Object.assign(selfProfile, userData.data());
+        }
         console.log("User data:", selfProfile);
 
         const requestsCollection = collection(firestoreDB, "requests");
@@ -793,7 +798,9 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById("requestsHeader").style.display = "none";
         init();
     }
-});
+}
+
+onAuthStateChanged(auth, authChange);
 
 // geocode stuff
 import { decode, encode, neighbors } from "ngeohash";
@@ -1279,6 +1286,9 @@ document.querySelector("#signUpForm").addEventListener("submit", async (event) =
         }
         await setDoc(doc(userCollection, userCredential.user.uid), { ...userProfile });
 
+        selfProfile = userProfile;
+
+        authChange(auth.currentUser);
 
         const modal = bootstrap.Modal.getInstance(document.getElementById("signUpModal"));
         modal.hide();
