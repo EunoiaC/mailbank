@@ -36,31 +36,240 @@ const firestoreDB = initializeFirestore(app, {
 const realtimeDB = getDatabase(app);
 
 function addChatButton(listItem, match) {
-    // Only add chat button if chatroomId exists
+    // Only add buttons if chatroomId exists (means the match is approved)
     if (match.chatroomId) {
+        // Create a button container
+        const buttonContainer = document.createElement("div");
+        buttonContainer.className = "d-flex align-items-center gap-2 mt-2";
+
+        // Add any existing badge to the container
+        const statusBadge = listItem.querySelector(".badge");
+        if (statusBadge) {
+            buttonContainer.appendChild(statusBadge.cloneNode(true));
+            statusBadge.remove();
+        }
+
         // Create a chat button
         const chatBtn = document.createElement("button");
-        chatBtn.className = "btn btn-sm btn-primary mt-2";
+        chatBtn.className = "btn btn-sm btn-primary";
         chatBtn.innerHTML = '<i class="bi bi-chat-dots"></i> Chat';
         chatBtn.addEventListener("click", () => openChatModal(match));
 
-        // Add to the list item
-        const statusBadge = listItem.querySelector(".badge");
-        if (statusBadge) {
-            const buttonContainer = document.createElement("div");
-            buttonContainer.className = "d-flex align-items-center gap-2 mt-2";
-            buttonContainer.appendChild(statusBadge.cloneNode(true));
-            statusBadge.remove();
-            buttonContainer.appendChild(chatBtn);
+        // Create a mail button
+        const mailBtn = document.createElement("button");
+        mailBtn.className = "btn btn-sm btn-success";
+        mailBtn.innerHTML = '<i class="bi bi-envelope"></i> Mail';
+        mailBtn.addEventListener("click", () => openMailMenu(match));
 
-            const infoSection = listItem.querySelector(".ps-5");
-            infoSection.appendChild(buttonContainer);
+        // Add buttons to the container
+        buttonContainer.appendChild(chatBtn);
+
+        // Only show mail button for sponsors
+        if (selfProfile.sponsor) {
+            buttonContainer.appendChild(mailBtn);
         } else {
-            const infoSection = listItem.querySelector(".ps-5");
-            infoSection.appendChild(chatBtn);
+            // For dependents, add a view mail history button instead
+            const viewMailBtn = document.createElement("button");
+            viewMailBtn.className = "btn btn-sm btn-outline-success";
+            viewMailBtn.innerHTML = '<i class="bi bi-envelope-open"></i> View Mail';
+            viewMailBtn.addEventListener("click", () => showMailHistory(match.id));
+            buttonContainer.appendChild(viewMailBtn);
         }
+
+        // Add to the list item
+        const infoSection = listItem.querySelector(".ps-5");
+        infoSection.appendChild(buttonContainer);
     }
 }
+// Function to open the mail dropdown menu
+function openMailMenu(match) {
+    // Store the request ID for mail recording
+    document.getElementById('receivedMailRequestId').value = match.id;
+
+    // Set today's date as default
+    document.getElementById('receivedDate').valueAsDate = new Date();
+
+    // Clear previous entries
+    document.getElementById('mailType').selectedIndex = 0;
+    document.getElementById('mailDescription').value = '';
+    document.getElementById('otherMailType').value = '';
+    document.getElementById('otherTypeContainer').classList.add('d-none');
+
+    // Show the modal
+    const mailModal = new bootstrap.Modal(document.getElementById('receivedMailModal'));
+    mailModal.show();
+}
+
+// Function to show mail history for a request
+async function showMailHistory(requestId) {
+    try {
+        // Get the request document
+        const requestDoc = await getDoc(doc(firestoreDB, "requests", requestId));
+        const requestData = requestDoc.data();
+        const mailList = requestData.mailList || [];
+
+        // Get the mail history list element
+        const mailHistoryList = document.getElementById('mailHistoryList');
+        const noMailMessage = document.getElementById('noMailMessage');
+
+        // Clear previous items
+        mailHistoryList.innerHTML = '';
+
+        if (mailList.length === 0) {
+            // Show the "no mail" message
+            noMailMessage.classList.remove('d-none');
+            mailHistoryList.classList.add('d-none');
+        } else {
+            // Hide the "no mail" message and show the list
+            noMailMessage.classList.add('d-none');
+            mailHistoryList.classList.remove('d-none');
+
+            // Sort mail items by date (newest first)
+            const sortedMail = [...mailList].sort((a, b) =>
+                new Date(b.receivedDate) - new Date(a.receivedDate));
+
+            // Add each mail item to the list
+            sortedMail.forEach(mail => {
+                // Get icon based on mail type
+                let iconClass = 'bi-envelope';
+                switch (mail.type) {
+                    case 'letter': iconClass = 'bi-envelope-paper'; break;
+                    case 'package': iconClass = 'bi-box'; break;
+                    case 'postcard': iconClass = 'bi-image'; break;
+                    case 'catalog': iconClass = 'bi-file-earmark-text'; break;
+                    case 'official': iconClass = 'bi-file-earmark-check'; break;
+                    case 'other': iconClass = 'bi-question-square'; break;
+                }
+
+                // Format the date
+                const date = new Date(mail.receivedDate);
+                const formattedDate = date.toLocaleDateString(undefined, {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                // Create the mail item element
+                const mailItem = document.createElement('div');
+                mailItem.className = 'list-group-item mail-item';
+                mailItem.innerHTML = `
+                    <div class="d-flex align-items-start">
+                        <div class="mail-type-icon mail-type-${mail.type}">
+                            <i class="bi ${iconClass}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${mail.displayType}</h6>
+                                <span class="mail-date">${formattedDate}</span>
+                            </div>
+                            ${mail.description ? `<p class="mail-description">${mail.description}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                mailHistoryList.appendChild(mailItem);
+            });
+        }
+
+        // Show the modal
+        const mailHistoryModal = new bootstrap.Modal(document.getElementById('mailHistoryModal'));
+        mailHistoryModal.show();
+
+    } catch (error) {
+        console.error("Error showing mail history:", error);
+        alert("Failed to load mail history. Please try again.");
+    }
+}
+
+// Function to record received mail
+async function recordReceivedMail() {
+    const requestId = document.getElementById('receivedMailRequestId').value;
+    const mailTypeSelect = document.getElementById('mailType');
+    const mailType = mailTypeSelect.value;
+    const mailDescription = document.getElementById('mailDescription').value.trim();
+    const receivedDate = document.getElementById('receivedDate').value;
+    const otherMailType = document.getElementById('otherMailType').value.trim();
+
+    // Validation
+    if (!mailType) {
+        alert("Please select a mail type");
+        return;
+    }
+
+    if (mailType === 'other' && !otherMailType) {
+        alert("Please specify the mail type");
+        return;
+    }
+
+    if (!receivedDate) {
+        alert("Please select a received date");
+        return;
+    }
+
+    try {
+        // Get the request document
+        const requestRef = doc(firestoreDB, "requests", requestId);
+        const requestDoc = await getDoc(requestRef);
+
+        if (!requestDoc.exists()) {
+            throw new Error("Request not found");
+        }
+
+        // Get the display type
+        let displayType = mailTypeSelect.options[mailTypeSelect.selectedIndex].text;
+        if (mailType === 'other') {
+            displayType = otherMailType;
+        }
+
+        // Create the mail object
+        const mailItem = {
+            type: mailType,
+            displayType: displayType,
+            description: mailDescription,
+            receivedDate: receivedDate,
+            recordedAt: new Date().toISOString(),
+            recordedBy: auth.currentUser.uid
+        };
+
+        // Update the request document
+        await setDoc(requestRef, {
+            mailList: [...(requestDoc.data().mailList || []), mailItem]
+        }, { merge: true });
+
+        // Close the modal
+        bootstrap.Modal.getInstance(document.getElementById('receivedMailModal')).hide();
+
+        // Show confirmation
+        alert("Mail recorded successfully!");
+
+    } catch (error) {
+        console.error("Error recording mail:", error);
+        alert("Failed to record mail. Please try again.");
+    }
+}
+
+// Show/hide the "other" field when mail type changes
+document.getElementById('mailType').addEventListener('change', function() {
+    const otherContainer = document.getElementById('otherTypeContainer');
+    if (this.value === 'other') {
+        otherContainer.classList.remove('d-none');
+    } else {
+        otherContainer.classList.add('d-none');
+    }
+});
+
+// Add event listener for the record mail button
+document.getElementById('confirmReceivedMail').addEventListener('click', recordReceivedMail);
+
+// Clear form when mail modal is closed
+document.getElementById('receivedMailModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('mailType').selectedIndex = 0;
+    document.getElementById('mailDescription').value = '';
+    document.getElementById('otherMailType').value = '';
+    document.getElementById('otherTypeContainer').classList.add('d-none');
+});
+
 function openChatModal(match) {
     const chatModal = new bootstrap.Modal(document.getElementById("chatModal"));
     const chatroomId = match.chatroomId;
@@ -369,7 +578,11 @@ onAuthStateChanged(auth, async (user) => {
         let field = "";
         if (selfProfile.sponsor) {
             field = "sponsorId";
+            const sponsorsHeader = document.getElementById("sponsorsHeader");
+            sponsorsHeader.style.display = "none";
         } else {
+            const dependentsHeader = document.getElementById("dependentsHeader");
+            dependentsHeader.style.display = "none";
             field = "dependentId";
         }
         const requestsQuery = query(requestsCollection, where(field, "==", user.uid));
@@ -407,19 +620,38 @@ onAuthStateChanged(auth, async (user) => {
 
         const requestList = document.getElementById("requestsList");
         const dependentsList = document.getElementById("dependentsList");
+        const sponsorsList = document.getElementById("sponsorsList");
         if (selfProfile.sponsor) {
             // fill with approved requests first
+            // Update the dependent item HTML
+            if (matches.length === 0) {
+                const noMatchesMsg = document.createElement("p");
+                noMatchesMsg.className = "text-muted";
+                noMatchesMsg.textContent = "No approved dependents yet.";
+                dependentsList.parentNode.insertBefore(noMatchesMsg, dependentsList);
+            }
+            if (pending.length === 0) {
+                const noPendingMsg = document.createElement("p");
+                noPendingMsg.className = "text-muted";
+                noPendingMsg.textContent = "No pending requests.";
+                requestList.parentNode.insertBefore(noPendingMsg, requestList);
+            }
             for (const match of matches) {
                 const listItem = document.createElement("li");
                 listItem.className = "list-group-item d-flex justify-content-between align-items-center";
                 listItem.innerHTML = `
         <div class="matched-dependent">
             <div class="d-flex align-items-center mb-2">
-                <div class="user-icon bg-primary text-white me-2 rounded-circle d-flex justify-content-center align-items-center" 
+                <div class="user-icon bg-primary text-white me-2 rounded-circle d-flex justify-content-center align-items-center"
                      style="width: 40px; height: 40px; font-size: 18px;">
                     ${match.dependentPrefix ? match.dependentPrefix[0] : match.dependentName[0]}
                 </div>
-                <h5 class="mb-0">${match.dependentPrefix ? match.dependentPrefix + ' ' : ''}${match.dependentName} ${match.dependentLastName}</h5>
+                <div>
+                    <h5 class="mb-0 d-flex align-items-center">
+                        ${match.dependentPrefix ? match.dependentPrefix + ' ' : ''}${match.dependentName} ${match.dependentLastName}
+                        <span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i> Approved</span>
+                    </h5>
+                </div>
             </div>
             <div class="ps-5">
                 <div class="mb-2">
@@ -427,13 +659,12 @@ onAuthStateChanged(auth, async (user) => {
                     <strong>Pickup Location:</strong>
                 </div>
                 <p class="ms-4 text-muted border-start border-primary ps-2">${match.pickupLocation}</p>
-                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Approved</span>
             </div>
         </div>
     `;
                 dependentsList.appendChild(listItem);
 
-                // Add chat button after the list item is created
+                // Add chat and mail buttons
                 addChatButton(listItem, match);
             }
             // then fill with pending requests
@@ -468,7 +699,77 @@ onAuthStateChanged(auth, async (user) => {
                 requestList.appendChild(listItem);
             }
         } else {
+            if (matches.length === 0) {
+                const noMatchesMsg = document.createElement("p");
+                noMatchesMsg.className = "text-muted";
+                noMatchesMsg.textContent = "No approved sponsors yet.";
+                sponsorsList.parentNode.insertBefore(noMatchesMsg, sponsorsList);
+            }
+            if (pending.length === 0) {
+                const noPendingMsg = document.createElement("p");
+                noPendingMsg.className = "text-muted";
+                noPendingMsg.textContent = "No pending requests.";
+                requestList.parentNode.insertBefore(noPendingMsg, requestList);
+            }
+            // User is a dependent
+            // Fill with approved requests first
+            for (const match of matches) {
+                const listItem = document.createElement("li");
+                listItem.className = "list-group-item d-flex justify-content-between align-items-center";
+                listItem.innerHTML = `
+            <div class="matched-dependent">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="user-icon bg-primary text-white me-2 rounded-circle d-flex justify-content-center align-items-center"
+                         style="width: 40px; height: 40px; font-size: 18px;">
+                        ${match.sponsorName ? match.sponsorName[0] : 'S'}
+                    </div>
+                    <div>
+                        <h5 class="mb-0 d-flex align-items-center">
+                            ${match.sponsorName || 'Sponsor'}
+                            <span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i> Approved</span>
+                        </h5>
+                    </div>
+                </div>
+                <div class="ps-5">
+                    <div class="mb-2">
+                        <i class="bi bi-house text-primary me-1"></i>
+                        <strong>Mailing Address:</strong>
+                    </div>
+                    <p class="ms-4 text-muted border-start border-primary ps-2">${match.sponsorAddress || 'Address pending'}</p>
+                    <div class="mb-2">
+                        <i class="bi bi-geo-alt text-primary me-1"></i>
+                        <strong>Pickup Location:</strong>
+                    </div>
+                    <p class="ms-4 text-muted border-start border-primary ps-2">${match.pickupLocation}</p>
+                </div>
+            </div>
+            `;
 
+                sponsorsList.appendChild(listItem);
+
+                // Add chat and mail buttons (mail history for dependents)
+                addChatButton(listItem, match);
+            }
+
+            // Show pending requests for dependent
+            if (pending.length > 0) {
+                for (const request of pending) {
+                    const listItem = document.createElement("li");
+                    listItem.className = "list-group-item";
+                    listItem.innerHTML = `
+                <div>
+                    <h5 class="mb-2">Pending Request</h5>
+                    <div class="mb-2">
+                        <i class="bi bi-geo-alt text-primary me-1"></i>
+                        <strong>Pickup Location:</strong>
+                        <p class="ms-4 text-muted border-start border-warning ps-2">${request.pickupLocation}</p>
+                    </div>
+                    <span class="badge bg-warning text-dark">Awaiting Approval</span>
+                </div>
+            `;
+                    requestList.appendChild(listItem);
+                }
+            }
         }
     } else {
         // Open Sign In Modal when "Sign In" button is clicked
@@ -477,6 +778,10 @@ onAuthStateChanged(auth, async (user) => {
             signInModal.show();
         });
 
+        // hide sponsor/dependent sections
+        document.getElementById("sponsorsHeader").style.display = "none";
+        document.getElementById("dependentsHeader").style.display = "none";
+        document.getElementById("requestsHeader").style.display = "none";
         init();
     }
 });
@@ -689,8 +994,8 @@ document.getElementById('confirmRequest').addEventListener('click', async () => 
         // Close the modal
         bootstrap.Modal.getInstance(document.getElementById('requestModal')).hide();
 
-        // Show success message
-        alert("Your request has been sent! You will be notified when the sponsor responds.");
+        // refresh the page to show the new request
+        window.location.reload();
     } catch (error) {
         console.error("Error sending request:", error);
         alert("Failed to send request. Please try again.");

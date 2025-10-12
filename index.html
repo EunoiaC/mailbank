@@ -40,11 +40,15 @@
             <div id="listings-map" class="d-block" style="height: 400px;"></div>
         </div>
         <br>
-        <h4>Dependents</h4>
+        <h4 id="sponsorsHeader">Sponsors</h4>
+        <div id="sponsorsList" class="list-group w-100 mb-5">
+            <!-- Requests will be dynamically added here -->
+        </div>
+        <h4 id="dependentsHeader">Dependents</h4>
         <div id="dependentsList" class="list-group w-100 mb-5">
             <!-- Requests will be dynamically added here -->
         </div>
-        <h4>Requests</h4>
+        <h4 id="requestsHeader">Requests</h4>
         <div id="requestsList" class="list-group w-100 mb-5">
             <!-- Requests will be dynamically added here -->
         </div>
@@ -275,6 +279,75 @@
                     </div>
                 </div>
                 <input type="hidden" id="currentChatroomId" value="">
+            </div>
+        </div>
+    </div>
+
+    <!-- Received Mail Modal -->
+    <div class="modal fade" id="receivedMailModal" tabindex="-1" aria-labelledby="receivedMailModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="receivedMailModalLabel">Record Received Mail</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="receivedMailForm">
+                        <div class="mb-3">
+                            <label for="mailType" class="form-label">Mail Type</label>
+                            <select class="form-select" id="mailType" required>
+                                <option value="" selected disabled>Select mail type</option>
+                                <option value="letter">Letter</option>
+                                <option value="package">Package</option>
+                                <option value="postcard">Postcard</option>
+                                <option value="catalog">Catalog/Flyer</option>
+                                <option value="official">Official Document</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 d-none" id="otherTypeContainer">
+                            <label for="otherMailType" class="form-label">Please specify</label>
+                            <input type="text" class="form-control" id="otherMailType" placeholder="Describe the mail type">
+                        </div>
+                        <div class="mb-3">
+                            <label for="mailDescription" class="form-label">Description (optional)</label>
+                            <textarea class="form-control" id="mailDescription" rows="2" placeholder="Any additional details about the mail"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="receivedDate" class="form-label">Date Received</label>
+                            <input type="date" class="form-control" id="receivedDate" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmReceivedMail">Record Mail</button>
+                </div>
+                <input type="hidden" id="receivedMailRequestId" value="">
+            </div>
+        </div>
+    </div>
+
+    <!-- View Mail History Modal -->
+    <div class="modal fade" id="mailHistoryModal" tabindex="-1" aria-labelledby="mailHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="mailHistoryModalLabel">Mail History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="mailHistoryList" class="list-group">
+                        <!-- Mail history items will be inserted here -->
+                    </div>
+                    <div id="noMailMessage" class="text-center text-muted py-5 d-none">
+                        <i class="bi bi-envelope-x fs-1"></i>
+                        <p class="mt-3">No mail has been recorded yet.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>

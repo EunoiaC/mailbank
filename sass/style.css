@@ -11964,4 +11964,61 @@ textarea.form-control-lg {
   margin-bottom: 8px;
 }
 
+.mail-item {
+  border-left: 3px solid #4285f4;
+  transition: all 0.2s ease;
+}
+
+.mail-item:hover {
+  background-color: #f8f9fa;
+}
+
+.mail-item .mail-type-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: white;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.mail-type-letter {
+  background-color: #4285f4;
+}
+
+.mail-type-package {
+  background-color: #ea4335;
+}
+
+.mail-type-postcard {
+  background-color: #34a853;
+}
+
+.mail-type-catalog {
+  background-color: #fbbc05;
+}
+
+.mail-type-official {
+  background-color: #673ab7;
+}
+
+.mail-type-other {
+  background-color: #9e9e9e;
+}
+
+.mail-date {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.mail-description {
+  font-size: 0.95rem;
+  color: #6c757d;
+  white-space: pre-line;
+  margin-top: 5px;
+}
+
 /*# sourceMappingURL=style.css.map */
