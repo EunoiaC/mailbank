@@ -580,6 +580,10 @@ onAuthStateChanged(auth, async (user) => {
             field = "sponsorId";
             const sponsorsHeader = document.getElementById("sponsorsHeader");
             sponsorsHeader.style.display = "none";
+
+            console.log(selfProfile.sponsor);
+            // hide the map section
+            document.getElementById("map-container").classList.add("d-none");
         } else {
             const dependentsHeader = document.getElementById("dependentsHeader");
             dependentsHeader.style.display = "none";
