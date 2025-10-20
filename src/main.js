@@ -279,7 +279,7 @@ function openChatModal(match) {
     if (selfProfile.sponsor) {
         chatPartnerName.textContent = `${match.dependentPrefix ? match.dependentPrefix + ' ' : ''}${match.dependentName} ${match.dependentLastName}`;
     } else {
-        chatPartnerName.textContent = match.sponsorName;
+        chatPartnerName.textContent = match.sponsorName + " " + (match.sponsorLastName || '');
     }
 
     // Store the current chatroom ID
@@ -885,7 +885,7 @@ async function getDocumentsInRadius(centerLat, centerLng, radiusInKm) {
 
     // Calculate geohash precision based on radius
     // Use precision 6 for smaller radius, 5 for larger
-    const precision = radiusInKm <= 10 ? 6 : 5;
+    const precision = 5;
 
     // Get center geohash at appropriate precision
     const centerHash = encode(centerLat, centerLng, precision);

@@ -70,6 +70,7 @@ export default async function approve_request(req, res) {
         // update the request to have the sponsor name and address
         await db.collection('requests').doc(requestId).update({
             sponsorName: sponsorData.first_name,
+            sponsorLastName: sponsorData.last_name, // necessary for c/o
             sponsorAddress: sponsorData.address,
             dependentName: dependentData.first_name,
             dependentPrefix: prefix,

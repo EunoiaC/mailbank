@@ -36,7 +36,7 @@
         <hr>
 
         <div id="map-container" class="mt-3">
-            <h4 class="mb-0">Listings Near You</h4>
+            <h4 class="mb-0">Listings Near You (25km radius)</h4>
             <p>Distances and Locations are not exact for protection.</p>
             <div id="listings-map" class="d-block" style="height: 400px;"></div>
         </div>
@@ -247,7 +247,7 @@
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle-fill me-2"></i>
-                        <strong>Important:</strong> Once accepted, your mailing address and name will be disclosed to the requester.
+                        <strong>Important:</strong> Once accepted, your mailing address and full name will be disclosed to the requester. This information must be disclosed to ensure proper mail delivery.
                     </div>
                     <p>Are you sure you want to accept this request?</p>
                 </div>
@@ -293,6 +293,10 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Important:</strong> opening or tampering with mail that is not addressed to you, even if you are providing mailbox services, is <strong>illegal</strong>.
+                    </div>
                     <form id="receivedMailForm">
                         <div class="mb-3">
                             <label for="mailType" class="form-label">Mail Type</label>
