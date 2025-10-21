@@ -36,49 +36,29 @@ const firestoreDB = initializeFirestore(app, {
 const realtimeDB = getDatabase(app);
 
 function addChatButton(listItem, match) {
-    // Only add buttons if chatroomId exists (means the match is approved)
     if (match.chatroomId) {
-        // Create a button container
-        const buttonContainer = document.createElement("div");
-        buttonContainer.className = "d-flex align-items-center gap-2 mt-2";
+        const actionButtonsDiv = listItem.querySelector(".card-footer .d-grid");
+        if (!actionButtonsDiv) return;
 
-        // Add any existing badge to the container
-        const statusBadge = listItem.querySelector(".badge");
-        if (statusBadge) {
-            buttonContainer.appendChild(statusBadge.cloneNode(true));
-            statusBadge.remove();
-        }
-
-        // Create a chat button
-        const chatBtn = document.createElement("button");
-        chatBtn.className = "btn btn-sm btn-primary";
-        chatBtn.innerHTML = '<i class="bi bi-chat-dots"></i> Chat';
-        chatBtn.addEventListener("click", () => openChatModal(match));
-
-        // Create a mail button
-        const mailBtn = document.createElement("button");
-        mailBtn.className = "btn btn-sm btn-success";
-        mailBtn.innerHTML = '<i class="bi bi-envelope"></i> Mail';
-        mailBtn.addEventListener("click", () => openMailMenu(match));
-
-        // Add buttons to the container
-        buttonContainer.appendChild(chatBtn);
-
-        // Only show mail button for sponsors
         if (selfProfile.sponsor) {
-            buttonContainer.appendChild(mailBtn);
+            const mailBtn = document.createElement("button");
+            mailBtn.className = "btn btn-sm btn-primary";
+            mailBtn.innerHTML = '<i class="bi bi-envelope"></i> Mail';
+            mailBtn.addEventListener("click", () => openMailMenu(match));
+            actionButtonsDiv.appendChild(mailBtn);
         } else {
-            // For dependents, add a view mail history button instead
             const viewMailBtn = document.createElement("button");
-            viewMailBtn.className = "btn btn-sm btn-outline-success";
+            viewMailBtn.className = "btn btn-sm btn-primary";
             viewMailBtn.innerHTML = '<i class="bi bi-envelope-open"></i> View Mail';
             viewMailBtn.addEventListener("click", () => showMailHistory(match.id));
-            buttonContainer.appendChild(viewMailBtn);
+            actionButtonsDiv.appendChild(viewMailBtn);
         }
 
-        // Add to the list item
-        const infoSection = listItem.querySelector(".ps-5");
-        infoSection.appendChild(buttonContainer);
+        const chatBtn = document.createElement("button");
+        chatBtn.className = "btn btn-sm btn-info";
+        chatBtn.innerHTML = '<i class="bi bi-chat-dots"></i> Chat';
+        chatBtn.addEventListener("click", () => openChatModal(match));
+        actionButtonsDiv.appendChild(chatBtn);
     }
 }
 // Function to open the mail dropdown menu
@@ -651,31 +631,45 @@ async function authChange(user)  {
                 requestList.parentNode.insertBefore(noPendingMsg, requestList);
             }
             for (const match of matches) {
-                const listItem = document.createElement("li");
-                listItem.className = "list-group-item d-flex justify-content-between align-items-center";
+                const listItem = document.createElement("div");
+                listItem.className = "col";
                 listItem.innerHTML = `
-        <div class="matched-dependent">
-            <div class="d-flex align-items-center mb-2">
-                <div class="user-icon bg-primary text-white me-2 rounded-circle d-flex justify-content-center align-items-center"
-                     style="width: 40px; height: 40px; font-size: 18px;">
-                    ${match.dependentPrefix ? match.dependentPrefix[0] : match.dependentName[0]}
-                </div>
-                <div>
-                    <h5 class="mb-0 d-flex align-items-center">
-                        ${match.dependentPrefix ? match.dependentPrefix + ' ' : ''}${match.dependentName} ${match.dependentLastName}
-                        <span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i> Approved</span>
-                    </h5>
-                </div>
-            </div>
-            <div class="ps-5">
-                <div class="mb-2">
-                    <i class="bi bi-geo-alt text-primary me-1"></i>
-                    <strong>Pickup Location:</strong>
-                </div>
-                <p class="ms-4 text-muted border-start border-primary ps-2">${match.pickupLocation}</p>
-            </div>
-        </div>
-    `;
+                    <div class="card border-0 shadow-sm h-100 d-flex flex-column">
+                        <div class="card-body flex-grow-1">
+                            <!-- Header with dependent info -->
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="user-icon bg-primary text-white me-3 rounded-circle d-flex justify-content-center align-items-center"
+                                     style="width: 50px; height: 50px; font-size: 20px;">
+                                    ${match.dependentPrefix ? match.dependentPrefix[0] : match.dependentName[0]}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-1">${match.dependentPrefix ? match.dependentPrefix + ' ' : ''}${match.dependentName} ${match.dependentLastName}</h5>
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Approved</span>
+                                </div>
+                            </div>
+                
+                            <!-- Pickup Location Information -->
+                            <div class="mb-3">
+                                <div class="mb-2">
+                                    <i class="bi bi-geo-alt text-primary me-2"></i>
+                                    <strong>Pickup Location</strong>
+                                </div>
+                                <div class="ms-4 p-2 bg-light rounded">
+                                    <small class="text-muted">${match.pickupLocation}</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons in Footer -->
+                        <div class="card-footer bg-white border-top-0">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-info btn-sm mailing-info-btn" data-match-id="${match.id}">
+                                    <i class="bi bi-info-circle me-1"></i> Mailing Info
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 dependentsList.appendChild(listItem);
 
                 // Add chat and mail buttons
@@ -684,31 +678,50 @@ async function authChange(user)  {
             // then fill with pending requests
             for (const request of pending) {
                 const listItem = document.createElement("li");
-                listItem.className = "list-group-item d-flex justify-content-between align-items-start";
-
+                listItem.className = "d-flex justify-content-between align-items-start";
                 // Check if user is a sponsor (only sponsors can approve/reject)
-                const actionButtons = selfProfile.sponsor ? `
-                <div class="ms-auto">
-                    <button class="btn btn-success btn-sm me-1 approve-btn" data-request-id="${request.id}">
-                        <i class="bi bi-check-lg"></i> Approve
-                    </button>
-                    <button class="btn btn-danger btn-sm reject-btn" data-request-id="${request.id}">
-                        <i class="bi bi-x-lg"></i> Decline
-                    </button>
-                </div>
-            ` : '';
+                                const actionButtons = selfProfile.sponsor ? `
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start mt-3">
+                        <button class="btn btn-success btn-sm approve-btn" data-request-id="${request.id}">
+                            <i class="bi bi-check-lg me-1"></i> Approve
+                        </button>
+                        <button class="btn btn-danger btn-sm reject-btn" data-request-id="${request.id}">
+                            <i class="bi bi-x-lg me-1"></i> Decline
+                        </button>
+                    </div>
+                ` : '';
 
                 listItem.innerHTML = `
-                <div class="me-auto">
-                    <h5 class="mb-2">Pending Request</h5>
-                    <div class="mb-2">
-                        <strong>Pickup Location:</strong> 
-                        <p class="text-muted mb-1">${request.pickupLocation}</p>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <!-- Header -->
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="user-icon bg-warning text-dark me-3 rounded-circle d-flex justify-content-center align-items-center"
+                                     style="width: 50px; height: 50px; font-size: 20px;">
+                                    <i class="bi bi-clock-history"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-1">Pending Request</h5>
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Awaiting Approval</span>
+                                </div>
+                            </div>
+                
+                            <!-- Pickup Location -->
+                            <div class="mb-3">
+                                <div class="mb-2">
+                                    <i class="bi bi-geo-alt text-primary me-2"></i>
+                                    <strong>Pickup Location</strong>
+                                </div>
+                                <div class="ms-4 p-2 bg-light rounded">
+                                    <small class="text-muted">${request.pickupLocation}</small>
+                                </div>
+                            </div>
+                
+                            <!-- Action Buttons -->
+                            ${actionButtons}
+                        </div>
                     </div>
-                    <span class="badge bg-warning text-dark">Awaiting Approval</span>
-                </div>
-                ${actionButtons}
-            `;
+                `;
 
                 requestList.appendChild(listItem);
             }
@@ -728,36 +741,53 @@ async function authChange(user)  {
             // User is a dependent
             // Fill with approved requests first
             for (const match of matches) {
-                const listItem = document.createElement("li");
-                listItem.className = "list-group-item d-flex justify-content-between align-items-center";
+                const listItem = document.createElement("div");
+                listItem.className = "col";
                 listItem.innerHTML = `
-            <div class="matched-dependent">
-                <div class="d-flex align-items-center mb-2">
-                    <div class="user-icon bg-primary text-white me-2 rounded-circle d-flex justify-content-center align-items-center"
-                         style="width: 40px; height: 40px; font-size: 18px;">
-                        ${match.sponsorName ? match.sponsorName[0] : 'S'}
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <!-- Header with sponsor info -->
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="user-icon bg-primary text-white me-3 rounded-circle d-flex justify-content-center align-items-center"
+                                     style="width: 50px; height: 50px; font-size: 20px;">
+                                    ${match.sponsorName ? match.sponsorName[0] : 'S'}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-1">${(match.sponsorName + " " + match.sponsorLastName) || 'Sponsor'}</h5>
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Approved</span>
+                                </div>
+                            </div>
+                
+                            <!-- Address Information -->
+                            <div class="mb-3">
+                                <div class="mb-2">
+                                    <i class="bi bi-house text-primary me-2"></i>
+                                    <strong>Mailing Address</strong>
+                                </div>
+                                <div class="ms-4 p-2 bg-light rounded">
+                                    <small class="text-muted">${match.sponsorAddress || 'Address pending'}</small>
+                                </div>
+                            </div>
+                
+                            <div class="mb-3">
+                                <div class="mb-2">
+                                    <i class="bi bi-geo-alt text-primary me-2"></i>
+                                    <strong>Pickup Location</strong>
+                                </div>
+                                <div class="ms-4 p-2 bg-light rounded">
+                                    <small class="text-muted">${match.pickupLocation}</small>
+                                </div>
+                            </div>
+                
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-start mt-3">
+                                <button class="btn btn-outline-info btn-sm mailing-info-btn" data-match-id="${match.id}">
+                                    <i class="bi bi-info-circle me-1"></i> How to Use Address
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <h5 class="mb-0 d-flex align-items-center">
-                            ${match.sponsorName || 'Sponsor'}
-                            <span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i> Approved</span>
-                        </h5>
-                    </div>
-                </div>
-                <div class="ps-5">
-                    <div class="mb-2">
-                        <i class="bi bi-house text-primary me-1"></i>
-                        <strong>Mailing Address:</strong>
-                    </div>
-                    <p class="ms-4 text-muted border-start border-primary ps-2">${match.sponsorAddress || 'Address pending'}</p>
-                    <div class="mb-2">
-                        <i class="bi bi-geo-alt text-primary me-1"></i>
-                        <strong>Pickup Location:</strong>
-                    </div>
-                    <p class="ms-4 text-muted border-start border-primary ps-2">${match.pickupLocation}</p>
-                </div>
-            </div>
-            `;
+                `;
 
                 sponsorsList.appendChild(listItem);
 
@@ -771,16 +801,16 @@ async function authChange(user)  {
                     const listItem = document.createElement("li");
                     listItem.className = "list-group-item";
                     listItem.innerHTML = `
-                <div>
-                    <h5 class="mb-2">Pending Request</h5>
-                    <div class="mb-2">
-                        <i class="bi bi-geo-alt text-primary me-1"></i>
-                        <strong>Pickup Location:</strong>
-                        <p class="ms-4 text-muted border-start border-warning ps-2">${request.pickupLocation}</p>
-                    </div>
-                    <span class="badge bg-warning text-dark">Awaiting Approval</span>
-                </div>
-            `;
+                        <div>
+                            <h5 class="mb-2">Pending Request</h5>
+                            <div class="mb-2">
+                                <i class="bi bi-geo-alt text-primary me-1"></i>
+                                <strong>Pickup Location:</strong>
+                                <p class="ms-4 text-muted border-start border-warning ps-2">${request.pickupLocation}</p>
+                            </div>
+                            <span class="badge bg-warning text-dark">Awaiting Approval</span>
+                        </div>
+                    `;
                     requestList.appendChild(listItem);
                 }
             }
@@ -1383,5 +1413,113 @@ document.getElementById('confirmAccept').addEventListener('click', async functio
     } catch (error) {
         console.error("Error accepting request:", error);
         alert("Failed to accept request. Please try again.");
+    }
+});
+
+// Handle mailing info button click
+// Handle mailing info button click
+document.addEventListener('click', async function(e) {
+    if (e.target && (e.target.classList.contains('mailing-info-btn') ||
+        (e.target.parentElement && e.target.parentElement.classList.contains('mailing-info-btn')))) {
+
+        const button = e.target.classList.contains('mailing-info-btn') ? e.target : e.target.parentElement;
+        const matchId = button.getAttribute('data-match-id');
+
+        // Find the match in the matches array
+        const match = matches.find(m => m.id === matchId);
+
+        if (!match) return;
+
+        // Populate the example form
+        if (selfProfile.sponsor) {
+            // Sponsor viewing what mail they should expect
+            const dependentFullName = `${match.dependentPrefix ? match.dependentPrefix + ' ' : ''}${match.dependentName} ${match.dependentLastName}`;
+            const sponsorFullName = `${selfProfile.prefix ? selfProfile.prefix + ' ' : ''}${selfProfile.first_name} ${selfProfile.last_name}`;
+
+            // Update modal title
+            document.getElementById('mailingInfoModalLabel').textContent = 'What to Look For in Your Mail';
+
+            // Update modal body content
+            const modalBody = document.querySelector('#mailingInfoModal .modal-body');
+            modalBody.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <strong>Mail Identification:</strong> Look for mail addressed to the recipient name below.
+                </div>
+
+                <h6 class="mb-3">Expected Mail Format:</h6>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Recipient Name (Look for this name)</strong></label>
+                            <input type="text" class="form-control" value="${dependentFullName}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Care Of (Your Name)</strong></label>
+                            <input type="text" class="form-control" value="C/O ${sponsorFullName}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Your Address</strong></label>
+                            <input type="text" class="form-control" value="${selfProfile.address}" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 p-3 bg-light rounded">
+                    <h6>Mail will appear as:</h6>
+                    <pre class="mb-0">${dependentFullName}\nC/O ${sponsorFullName}\n${selfProfile.address}</pre>
+                </div>
+
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Remember:</strong> Only record mail that matches the recipient name above. Do not open or tamper with the mail.
+                </div>
+            `;
+        } else {
+            // Dependent viewing how to use sponsor's address
+            const dependentFullName = `${selfProfile.prefix ? selfProfile.prefix + ' ' : ''}${selfProfile.first_name} ${selfProfile.last_name}`;
+            const sponsorFullName = `${match.sponsorName} ${match.sponsorLastName}`;
+
+            // Update modal title
+            document.getElementById('mailingInfoModalLabel').textContent = 'How to Fill Out Mailing Information';
+
+            // Update modal body content
+            const modalBody = document.querySelector('#mailingInfoModal .modal-body');
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Important:</strong> Do not use the mailing address as a residential address. This is strictly for mail receiving purposes only.
+                </div>
+
+                <h6 class="mb-3">Example: How to Format Your Mailing Address</h6>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Your Name (Recipient)</strong></label>
+                            <input type="text" class="form-control" value="${dependentFullName}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Care Of (C/O) - Sponsor's Name</strong></label>
+                            <input type="text" class="form-control" value="C/O ${sponsorFullName}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Mailing Address</strong></label>
+                            <input type="text" class="form-control" value="${match.sponsorAddress}" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 p-3 bg-light rounded">
+                    <h6>Complete Formatted Example:</h6>
+                    <pre class="mb-0">${dependentFullName}\nC/O ${sponsorFullName}\n${match.sponsorAddress}</pre>
+                </div>
+            `;
+        }
+
+        // Show the modal
+        const mailingInfoModal = new bootstrap.Modal(document.getElementById('mailingInfoModal'));
+        mailingInfoModal.show();
     }
 });
