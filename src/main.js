@@ -640,14 +640,14 @@ async function authChange(user)  {
                             <div class="d-flex align-items-center mb-3">
                                 <div class="user-icon bg-primary text-white me-3 rounded-circle d-flex justify-content-center align-items-center"
                                      style="width: 50px; height: 50px; font-size: 20px;">
-                                    ${match.dependentPrefix ? match.dependentPrefix[0] : match.dependentName[0]}
+                                    ${match.dependentName[0]}
                                 </div>
                                 <div class="flex-grow-1">
                                     <h5 class="mb-1">${match.dependentPrefix ? match.dependentPrefix + ' ' : ''}${match.dependentName} ${match.dependentLastName}</h5>
                                     <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Approved</span>
                                 </div>
                             </div>
-                
+                            
                             <!-- Pickup Location Information -->
                             <div class="mb-3">
                                 <div class="mb-2">
@@ -744,31 +744,32 @@ async function authChange(user)  {
                 const listItem = document.createElement("div");
                 listItem.className = "col";
                 listItem.innerHTML = `
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-body">
-                            <!-- Header with sponsor info -->
+                    <div class="card border-0 shadow-sm h-100 d-flex flex-column">
+                        <div class="card-body flex-grow-1">
+                            <!-- Header with dependent info -->
                             <div class="d-flex align-items-center mb-3">
                                 <div class="user-icon bg-primary text-white me-3 rounded-circle d-flex justify-content-center align-items-center"
                                      style="width: 50px; height: 50px; font-size: 20px;">
-                                    ${match.sponsorName ? match.sponsorName[0] : 'S'}
+                                    ${match.sponsorName[0]}
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h5 class="mb-1">${(match.sponsorName + " " + match.sponsorLastName) || 'Sponsor'}</h5>
+                                    <h5 class="mb-1">${match.sponsorPrefix ? match.sponsorPrefix + ' ' : ''}${match.sponsorName} ${match.sponsorLastName}</h5>
                                     <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Approved</span>
                                 </div>
                             </div>
-                
-                            <!-- Address Information -->
+                            
+                            <!-- Mailing Address Information -->
                             <div class="mb-3">
                                 <div class="mb-2">
-                                    <i class="bi bi-house text-primary me-2"></i>
+                                    <i class="bi bi-envelope text-primary me-2"></i>
                                     <strong>Mailing Address</strong>
                                 </div>
                                 <div class="ms-4 p-2 bg-light rounded">
-                                    <small class="text-muted">${match.sponsorAddress || 'Address pending'}</small>
+                                    <small class="text-muted">${match.sponsorAddress}</small>
                                 </div>
                             </div>
                 
+                            <!-- Pickup Location Information -->
                             <div class="mb-3">
                                 <div class="mb-2">
                                     <i class="bi bi-geo-alt text-primary me-2"></i>
@@ -778,11 +779,13 @@ async function authChange(user)  {
                                     <small class="text-muted">${match.pickupLocation}</small>
                                 </div>
                             </div>
+                        </div>
                 
-                            <!-- Action Buttons -->
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-start mt-3">
+                        <!-- Action Buttons in Footer -->
+                        <div class="card-footer bg-white border-top-0">
+                            <div class="d-grid gap-2">
                                 <button class="btn btn-outline-info btn-sm mailing-info-btn" data-match-id="${match.id}">
-                                    <i class="bi bi-info-circle me-1"></i> How to Use Address
+                                    <i class="bi bi-info-circle me-1"></i> Mailing Info
                                 </button>
                             </div>
                         </div>
